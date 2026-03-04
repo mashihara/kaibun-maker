@@ -1,6 +1,64 @@
 import { normalize, isHiraganaOnly, reverseString, isPalindrome } from "./kana";
 import { DICTIONARY } from "./dictionary";
 
+export interface HighlightSegment {
+  text: string;
+  isWord: boolean;
+}
+
+// 回文テキスト内の辞書単語（2文字以上）を検出してハイライト用セグメントに分割
+export function highlightDictionaryWords(text: string): HighlightSegment[] {
+  const dictSet = new Set(DICTIONARY.filter((w) => w.length >= 2));
+  // 辞書内の最大単語長
+  const maxLen = Math.max(...[...dictSet].map((w) => w.length));
+
+  // 各位置でマッチしたかどうかを管理
+  const matched = new Array(text.length).fill(false);
+  const matches: { start: number; end: number }[] = [];
+
+  // 長い単語を優先してマッチ
+  for (let len = maxLen; len >= 2; len--) {
+    for (let i = 0; i <= text.length - len; i++) {
+      // すでにマッチ済みの位置を含む場合はスキップ
+      let overlap = false;
+      for (let j = i; j < i + len; j++) {
+        if (matched[j]) {
+          overlap = true;
+          break;
+        }
+      }
+      if (overlap) continue;
+
+      const substr = text.slice(i, i + len);
+      if (dictSet.has(substr)) {
+        matches.push({ start: i, end: i + len });
+        for (let j = i; j < i + len; j++) {
+          matched[j] = true;
+        }
+      }
+    }
+  }
+
+  // 位置順にソート
+  matches.sort((a, b) => a.start - b.start);
+
+  // セグメントに分割
+  const segments: HighlightSegment[] = [];
+  let pos = 0;
+  for (const m of matches) {
+    if (pos < m.start) {
+      segments.push({ text: text.slice(pos, m.start), isWord: false });
+    }
+    segments.push({ text: text.slice(m.start, m.end), isWord: true });
+    pos = m.end;
+  }
+  if (pos < text.length) {
+    segments.push({ text: text.slice(pos), isWord: false });
+  }
+
+  return segments;
+}
+
 export interface PalindromeResult {
   text: string;
   category: "self" | "reverse" | "dictionary" | "sandwich";

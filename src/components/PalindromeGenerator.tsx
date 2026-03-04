@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { generatePalindromes, PalindromeResult } from "@/lib/palindrome";
+import {
+  generatePalindromes,
+  PalindromeResult,
+  highlightDictionaryWords,
+} from "@/lib/palindrome";
 
 const categoryLabel: Record<PalindromeResult["category"], string> = {
   self: "入力そのもの",
@@ -137,7 +141,20 @@ export default function PalindromeGenerator() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-xl font-bold tracking-widest text-gray-900 break-all">
-                          {result.text}
+                          {highlightDictionaryWords(result.text).map(
+                            (seg, i) =>
+                              seg.isWord ? (
+                                <span
+                                  key={i}
+                                  className="text-indigo-600 bg-indigo-50 rounded px-0.5"
+                                  title={seg.text}
+                                >
+                                  {seg.text}
+                                </span>
+                              ) : (
+                                <span key={i}>{seg.text}</span>
+                              )
+                          )}
                         </p>
                         <p className="text-sm text-gray-400 mt-1">
                           {result.description}
